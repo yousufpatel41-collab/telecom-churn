@@ -106,3 +106,19 @@ uvicorn src.api:app --reload
 ## 📬 Author
 
 **Yousuf Patel** — [LinkedIn](https://linkedin.com/in/yousuf-patel) · [Email](mailto:yousuf9patel@gmail.com)
+
+---
+
+## 📊 Output Charts
+
+### ROC Curve & Confusion Matrix
+![ROC & Confusion Matrix](outputs/roc_confusion.png)
+
+### Feature Importance — Top Churn Drivers
+![Feature Importance](outputs/feature_importance.png)
+
+### Revenue Impact by Risk Tier
+![Revenue Impact](outputs/revenue_impact.png)
+
+### Churn Rate by Customer Segment
+![Churn by Segment](outputs/churn_by_segment.png)
