@@ -48,7 +48,7 @@ telecom-churn/
 
 ### 1. Clone & install
 ```bash
-git clone https://github.com/YOUR_USERNAME/telecom-churn.git
+git clone https://github.com/yousufpatel41-collab/telecom-churn.git
 cd telecom-churn
 pip install -r requirements.txt
 ```
