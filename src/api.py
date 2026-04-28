@@ -1,9 +1,3 @@
-"""
-api.py
-FastAPI real-time churn scoring endpoint.
-Run: uvicorn src.api:app --reload
-"""
-
 import pickle
 import numpy as np
 import pandas as pd
