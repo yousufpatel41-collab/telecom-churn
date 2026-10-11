@@ -1,47 +1,33 @@
-"""preprocess.py — Feature engineering pipeline for Telecom Churn dataset."""
-import pandas as pd
+"""Fitted preprocessing shared by training and inference."""
+from pathlib import Path
 import numpy as np
-from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+from sklearn.compose import ColumnTransformer, make_column_selector
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder
 
+ROOT = Path(__file__).resolve().parents[1]
+MODEL_PATH = ROOT / "models/churn_pipeline.pkl"
+DATA_PATH = ROOT / "data/WA_Fn-UseC_-Telco-Customer-Churn.csv"
 
-def load_data(filepath):
-    df = pd.read_csv(filepath)
-    df.columns = df.columns.str.strip()
-    return df
+def load_data(path=DATA_PATH):
+    df = pd.read_csv(path)
+    y = df.pop("Churn").map({"No": 0, "Yes": 1})
+    if y.isna().any():
+        raise ValueError("Churn must contain only Yes and No")
+    return prepare_features(df), y.astype(int)
 
-
-def clean_data(df):
+def prepare_features(df):
+    df = df.drop(columns=["customerID"], errors="ignore").copy()
     df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
-    df["TotalCharges"].fillna(df["TotalCharges"].median(), inplace=True)
-    df.drop(columns=["customerID"], inplace=True, errors="ignore")
-    df["Churn"] = (df["Churn"] == "Yes").astype(int)
     return df
 
-
-def engineer_features(df):
-    df["tenure_group"] = pd.cut(
-        df["tenure"], bins=[0,12,24,48,60,72],
-        labels=["0-1yr","1-2yr","2-4yr","4-5yr","5+yr"]
-    )
-    df["charge_per_tenure"] = df["MonthlyCharges"] / (df["tenure"] + 1)
-    service_cols = ["PhoneService","MultipleLines","InternetService",
-                    "OnlineSecurity","OnlineBackup","DeviceProtection",
-                    "TechSupport","StreamingTV","StreamingMovies"]
-    df["num_services"] = df[service_cols].apply(
-        lambda r: sum(v not in ["No","No internet service","No phone service"] for v in r), axis=1)
-    return df
-
-
-def encode_categoricals(df):
-    le = LabelEncoder()
-    for col in df.select_dtypes(include=["object","category"]).columns:
-        df[col] = le.fit_transform(df[col].astype(str))
-    return df
-
-
-def run_pipeline(filepath):
-    df = load_data(filepath)
-    df = clean_data(df)
-    df = engineer_features(df)
-    df = encode_categoricals(df)
-    return df.drop(columns=["Churn"]), df["Churn"]
+def build_preprocessor():
+    return ColumnTransformer([
+        ("numeric", SimpleImputer(strategy="median"), make_column_selector(dtype_include=np.number)),
+        ("categorical", Pipeline([
+            ("missing", SimpleImputer(strategy="most_frequent")),
+            ("encode", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+        ]), make_column_selector(dtype_include=object)),
+    ])
