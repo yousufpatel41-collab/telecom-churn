@@ -1,5 +1,7 @@
 # Telecom churn prediction
 
+[![Checks](https://github.com/yousufpatel41-collab/telecom-churn/actions/workflows/tests.yml/badge.svg)](https://github.com/yousufpatel41-collab/telecom-churn/actions)
+
 A portfolio project using IBM's sample Telco Customer Churn dataset. A fitted preprocessing pipeline and XGBoost classifier predict churn; FastAPI serves the same pipeline.
 
 ## Run locally
@@ -10,6 +12,7 @@ Use Python 3.11 or 3.12 in a virtual environment. From the repository root:
 pip install -r requirements.txt
 python src/download_data.py
 python src/train.py
+python src/build_evaluation_report.py
 python -m unittest discover -s tests
 uvicorn api:app --app-dir src
 ```
@@ -36,3 +39,23 @@ The API's monthly revenue-at-risk field is MonthlyCharges multiplied by predicte
 No Power BI dashboard or EDA notebook is included. Earlier charts were removed because their results could not be reproduced from the committed training code.
 
 Dataset: [IBM Telco Customer Churn](https://github.com/IBM/telco-customer-churn-on-icp4d/blob/master/data/Telco-Customer-Churn.csv). This project is not affiliated with IBM or Vodafone.
+
+## Reproduced results
+
+Held-out set: 1,409 records; threshold 0.5.
+
+| ROC-AUC | Accuracy | Precision | Recall | F1 |
+|---:|---:|---:|---:|---:|
+| 0.8384 | 80.06% | 65.25% | 53.21% | 58.62% |
+
+Training five-fold ROC-AUC: 0.8409 ± 0.0079. These describe one sample split; external validity and retention impact have not been measured.
+
+## Licence and data rights
+
+Project code and documentation: [MIT](LICENSE). External datasets retain their own terms; see [DATA_SOURCES.md](DATA_SOURCES.md).
+
+## Evaluation chart
+
+![Selected model held-out confusion matrix](outputs/evaluation.svg)
+
+Recreate this chart with `python src/build_evaluation_report.py` after training. It displays recorded holdout counts; it is not a SHAP or feature-importance plot.
