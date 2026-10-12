@@ -1,12 +1,11 @@
 import pickle
-import numpy as np
+from preprocess import MODEL_PATH, prepare_features
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Literal
 
 # Load model at startup
-MODEL_PATH = "models/xgb_churn_model.pkl"
 try:
     with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
@@ -17,7 +16,7 @@ app = FastAPI(
     title="Telecom Churn Prediction API",
     description="Real-time churn risk scoring for telecom customers. "
                 "Built by Yousuf Patel | M.Sc. ISM Munich",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 
@@ -68,33 +67,7 @@ def get_risk_tier(prob: float):
 
 
 def preprocess_input(customer: CustomerFeatures) -> pd.DataFrame:
-    from sklearn.preprocessing import LabelEncoder
-    data = customer.dict()
-    df = pd.DataFrame([data])
-
-    # Derived features
-    df["tenure_group"] = pd.cut(
-        df["tenure"],
-        bins=[0, 12, 24, 48, 60, 72],
-        labels=["0-1yr", "1-2yr", "2-4yr", "4-5yr", "5+yr"],
-    )
-    df["charge_per_tenure"] = df["MonthlyCharges"] / (df["tenure"] + 1)
-
-    service_cols = [
-        "PhoneService", "MultipleLines", "InternetService",
-        "OnlineSecurity", "OnlineBackup", "DeviceProtection",
-        "TechSupport", "StreamingTV", "StreamingMovies",
-    ]
-    df["num_services"] = df[service_cols].apply(
-        lambda row: sum(v not in ["No", "No internet service", "No phone service"] for v in row),
-        axis=1,
-    )
-
-    le = LabelEncoder()
-    for col in df.select_dtypes(include=["object", "category"]).columns:
-        df[col] = le.fit_transform(df[col].astype(str))
-
-    return df
+    return prepare_features(pd.DataFrame([customer.model_dump()]))
 
 
 @app.get("/", tags=["Health"])
@@ -105,7 +78,7 @@ def root():
 @app.post("/predict", response_model=ChurnResponse, tags=["Prediction"])
 def predict_churn(customer: CustomerFeatures, customer_id: str = "CUST-001"):
     if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded. Run train.py first.")
+        raise HTTPException(status_code=503, detail="Model not loaded. Run python src/train.py first.")
 
     df = preprocess_input(customer)
     prob = float(model.predict_proba(df)[:, 1][0])
